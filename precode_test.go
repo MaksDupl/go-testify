@@ -54,26 +54,27 @@ func TestMainHandlerStatusOK(t *testing.T) {
 
 	// Проверяем, что статус ответа — 200 OK
 	require.Equal(t, http.StatusOK, responseRecorder.Code, "Expected status code 200")
+
+	// Проверяем, что тело ответа не пустое
+	body := responseRecorder.Body.String()
+	assert.NotEmpty(t, body, "Response body should not be empty")
 }
 
-func TestMainHandlerResponseContent(t *testing.T) {
-	// Ожидаемый список кафе
-	expectedCafes := []string{"Мир кофе", "Сладкоежка", "Кофе и завтраки", "Сытый студент"}
+func TestMainHandlerWhenCityNotSupported(t *testing.T) {
+	// Создаем запрос с неподдерживаемым городом
+	req := httptest.NewRequest("GET", "/cafe?count=2&city=unknowncity", nil)
 
-	// Создаем запрос
-	req := httptest.NewRequest("GET", "/cafe?count=4&city=moscow", nil)
-
-	// Создаем фиктивный записывающий ответ
+	// Создаем фиктивный объект для записи ответа
 	responseRecorder := httptest.NewRecorder()
 
-	// Указываем обработчик для тестирования
+	// Вызываем обработчик
 	handler := http.HandlerFunc(mainHandle)
 	handler.ServeHTTP(responseRecorder, req)
 
-	// Получаем тело ответа
-	body := responseRecorder.Body.String()
+	// Проверяем, что статус ответа — 400 Bad Request
+	require.Equal(t, http.StatusBadRequest, responseRecorder.Code, "Expected status code 400")
 
-	// Проверяем, что список кафе совпадает с ожидаемым
-	list := strings.Split(body, ",")
-	assert.Equal(t, expectedCafes, list, "Returned cafe list does not match expected")
+	// Проверяем, что тело ответа содержит ошибку "wrong city value"
+	body := responseRecorder.Body.String()
+	assert.Equal(t, "wrong city value", body, "Response body should contain the error message")
 }
